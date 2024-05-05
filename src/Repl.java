@@ -47,7 +47,7 @@ public class Repl {
                         int amount = Integer.parseInt(parts[1]);
                         Process createdProcess = memoryManager.allocateMemory(amount);
 
-                        System.out.println("\nCreated process ID: " + createdProcess.getId());
+                        System.out.println("Created process ID: " + createdProcess.getId());
                         System.out.println("Base: " + createdProcess.getBase());
                         System.out.println("Limit: " + createdProcess.getLimit());
                         break;
@@ -66,7 +66,7 @@ public class Repl {
                         }
                         id = Integer.parseInt(parts[1]);
                         int virtualAddress = Integer.parseInt(parts[2]);
-                        memoryManager.convertAddress(id, virtualAddress);
+                        System.out.println(memoryManager.convertAddress(id, virtualAddress));
                         break;
 
                     case PRINT_MEMORY:
@@ -78,8 +78,7 @@ public class Repl {
                         break;
 
                     case UNKNOWN:
-
-                        break;
+                        throw new Exception("Unknown command");
                 }
             } catch (Exception e) {
                 System.err.println("Error: " + e.getMessage());

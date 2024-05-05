@@ -297,7 +297,7 @@ public class MemoryManager {
     public void deleteProcess(int processID) throws ProcessNotFoundException {
         int idx = findProcessById(processID);
         if (idx == -1) {
-            throw new ProcessNotFoundException();
+            throw new ProcessNotFoundException(processID);
         }
         Process process = processes.get(idx);
         processes.remove(idx);
@@ -329,7 +329,7 @@ public class MemoryManager {
     public int convertAddress(int processID, int virtualAddress) throws ProcessNotFoundException, IllegalAddressException {
         int idx = findProcessById(processID);
         if (idx == -1) {
-            throw new ProcessNotFoundException();
+            throw new ProcessNotFoundException(processID);
         }
         Process process = processes.get(idx);
         if (virtualAddress >= process.getLimit() || virtualAddress < 0) {
