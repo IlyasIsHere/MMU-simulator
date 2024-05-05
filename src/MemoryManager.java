@@ -102,8 +102,60 @@ public class MemoryManager {
         return new Process(bestHoleStart, amount);
     }
 
-    public int allocWorstFit(int amount) {
+    public Process allocWorstFit(int amount) throws Exception {
+        int currentHoleStart = -1;
+        int currentHoleSize = 0;
+        int worstFitHoleSize = 0;
+        int worstFitHoleStart = -1;
 
+        int i;
+        for (i = 0; i < memSize; i++) {
+            // Checking if memMap[i] is an available allocation unit
+            if (memMap[i] == -1) {
+                if (currentHoleStart == -1) { // This means that this is the start of a hole
+                    currentHoleStart = i;
+
+                    // Check if we're near the end of the memory
+                    if (i + amount - 1 >= memSize) {
+                        break;
+                    }
+
+                    // Check if the unit at [start of this hole + the requested amount - 1] is already allocated
+                    if (memMap[i + amount - 1] != -1) {
+                        // If so, this hole will not fit for the new process. Thus, move directly to [i + amount] and search. This avoids unnecessary traversal if the hole is too small.
+                        i += amount - 1; // -1 because it will get incremented at the next iteration.
+                        currentHoleStart = -1;
+                        continue;
+                    }
+                }
+                currentHoleSize++;
+
+            } else {
+                if (amount <= currentHoleSize && currentHoleSize > worstFitHoleSize) { // if it fits the requested amount, and it's worse (bigger) than the worst we've found so far
+                    worstFitHoleSize = currentHoleSize;
+                    worstFitHoleStart = currentHoleStart;
+                }
+
+                // Reinitialize the counters
+                currentHoleSize = 0;
+                currentHoleStart = -1;
+            }
+
+            // Check if we've reached the end of memory and handle the case where the end of the memory is a hole
+            if (i == memSize - 1 && amount <= currentHoleSize && currentHoleSize > worstFitHoleSize) {
+                worstFitHoleStart = currentHoleStart;
+            }
+        }
+
+
+        // Checking if we found at least one space that fits
+        if (worstFitHoleStart == -1) {
+            throw new Exception("Error: There is no enough space in the memory.");
+        }
+
+        // Updating the memory map
+        allocInMemMap(worstFitHoleStart, amount, Process.count);
+        return new Process(worstFitHoleStart, amount);
     }
 
     public void allocInMemMap(int base, int amount, int processID) {
