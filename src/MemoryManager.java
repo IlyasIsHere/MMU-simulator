@@ -32,8 +32,53 @@ public class MemoryManager {
         processes = new ArrayList<>();
     }
 
-    public int allocFirstFit(int amount) {
+    public Process allocFirstFit(int amount) throws Exception {
+        int currentHoleStart = -1;
+        int currentHoleSize = 0;
 
+        int i;
+        for (i = 0; i < memSize; i++) {
+            // Checking if memMap[i] is an available allocation unit
+            if (memMap[i] == -1) {
+                if (currentHoleStart == -1) { // This means that this is the start of a hole
+                    currentHoleStart = i;
+
+                    // Check if we're near the end of the memory
+                    if (i + amount - 1 >= memSize) {
+                        break;
+                    }
+
+                    // Check if the unit at [start of this hole + the requested amount - 1] is already allocated
+                    if (memMap[i + amount - 1] != -1) {
+                        // If so, this hole will not fit for the new process. Thus, move directly to [i + amount] and search. This avoids unnecessary traversal if the hole is too small.
+                        i += amount - 1; // -1 because it will get incremented at the next iteration.
+                        currentHoleStart = -1;
+                        continue;
+                    }
+                }
+                currentHoleSize++;
+
+            } else {
+                if (amount <= currentHoleSize) {
+                    // Found a hole that fits the requested amount, so choose it.
+                    allocInMemMap(currentHoleStart, amount, Process.count);
+                    return new Process(currentHoleStart, amount);
+                }
+
+                // Reinitialize the counters
+                currentHoleSize = 0;
+                currentHoleStart = -1;
+            }
+
+            // Check if we've reached the end of memory and handle the case where the end of the memory is a hole
+            if (i == memSize - 1 && amount <= currentHoleSize) {
+                allocInMemMap(currentHoleStart, amount, Process.count);
+                return new Process(currentHoleStart, amount);
+            }
+        }
+
+        // If we reach here, it means that there was no hole that would fit (otherwise, we would have chosen it).
+        throw new NoEnoughMemoryException();
     }
 
     public int allocNextFit(int amount) {
@@ -94,7 +139,7 @@ public class MemoryManager {
 
         // Checking if we found at least one space that fits
         if (bestHoleStart == -1) {
-            throw new Exception("Error: There is no enough space in the memory.");
+            throw new NoEnoughMemoryException();
         }
 
         // Updating the memory map
@@ -150,7 +195,7 @@ public class MemoryManager {
 
         // Checking if we found at least one space that fits
         if (worstFitHoleStart == -1) {
-            throw new Exception("Error: There is no enough space in the memory.");
+            throw new NoEnoughMemoryException();
         }
 
         // Updating the memory map
