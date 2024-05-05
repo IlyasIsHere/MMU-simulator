@@ -339,6 +339,20 @@ public class MemoryManager {
         return process.getBase() + virtualAddress;
     }
 
+    public void printMemory() {
+        System.out.println("Memory Map:");
+        System.out.println("-----------");
+        for (int i = 0; i < memSize; i++) {
+            if (memMap[i] == -1) {
+                System.out.printf("%-4d - %-3s", i, "Free");
+            } else {
+                System.out.printf("%-4d - %-3d", i, memMap[i]);
+            }
+            System.out.println();
+        }
+        System.out.println();
+    }
+
     public int getMemSize() {
         return memSize;
     }

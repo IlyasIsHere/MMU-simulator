@@ -3,17 +3,20 @@ import java.util.Scanner;
 
 
 public class mmu {
+    public static final String ANSI_RESET = "\u001B[0m";
+    public static final String ANSI_RED = "\u001B[31m";
+
     // constants for different allocation strategies
     public static final int FIRST_FIT = 1;
     public static final int NEXT_FIT = 2;
     public static final int BEST_FIT = 3;
     public static final int WORST_FIT = 4;
 
-
     public static void main(String[] args) {
         if (args.length != 2) {
-            System.err.println("Error: Wrong number of arguments. You should provide the size of the memory and the allocation strategy.");
-            System.err.println("Correct usage: java mmu <size> <allocation strategy>");
+            printErr("Error: Wrong number of arguments. You should provide the size of the memory and the allocation strategy.");
+            printErr("Correct usage: java mmu <size> <allocation strategy>");
+            printErr("e.g: java mmu 200 3");
             System.exit(1);
         }
 
@@ -24,7 +27,7 @@ public class mmu {
 
             mm = new MemoryManager(memSize, allocStrategy);
         } catch (Exception e) {
-            System.err.println("Error: " + e.getMessage());
+            printErr("Error: " + e.getMessage());
             System.exit(1);
         }
 
@@ -33,5 +36,10 @@ public class mmu {
         repl.start();
 
         sc.close();
+    }
+
+    // Custom printing method to print red-colored text in the terminal
+    public static void printErr(String s) {
+        System.out.println(ANSI_RED + s + ANSI_RESET);
     }
 }

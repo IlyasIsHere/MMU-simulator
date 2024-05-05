@@ -66,11 +66,12 @@ public class Repl {
                         }
                         id = Integer.parseInt(parts[1]);
                         int virtualAddress = Integer.parseInt(parts[2]);
-                        System.out.println(memoryManager.convertAddress(id, virtualAddress));
+                        int physicalAddress = memoryManager.convertAddress(id, virtualAddress);
+                        System.out.println(physicalAddress);
                         break;
 
                     case PRINT_MEMORY:
-
+                        memoryManager.printMemory();
                         break;
 
                     case EXIT:
@@ -81,7 +82,7 @@ public class Repl {
                         throw new Exception("Unknown command");
                 }
             } catch (Exception e) {
-                System.err.println("Error: " + e.getMessage());
+                mmu.printErr("Error: " + e.getMessage());
                 continue;
             }
         }
