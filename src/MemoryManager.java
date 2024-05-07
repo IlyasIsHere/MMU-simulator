@@ -11,9 +11,9 @@ public class MemoryManager {
     private int memSize;
 
     /**
-     * For each allocation unit (1 KB) in the memory, the corresponding entry in this array is the id of the process to which it's allocated. If that allocation unit is free, the value in the memMap is -1.
+     * This is the bitmap. For each allocation unit (1 KB) in the memory, the corresponding entry in this array is a bit indicating whether that unit is available or not (0 if it's free, 1 if it's allocated).
      */
-    private int[] memMap;
+    private int[] bitmap;
 
     private int fitStrategy;
 
@@ -34,8 +34,8 @@ public class MemoryManager {
      */
     public MemoryManager(int memSize, int fitStrategy) {
         this.memSize = memSize;
-        memMap = new int[memSize];
-        Arrays.fill(memMap, -1);
+        bitmap = new int[memSize];
+        Arrays.fill(bitmap, 0);
 
         if (fitStrategy <= 0 || fitStrategy > 4) {
             throw new IllegalArgumentException("The allocation strategy must be between 1 and 4");
@@ -76,7 +76,7 @@ public class MemoryManager {
         int i;
         for (i = 0; i < memSize; i++) {
             // Checking if memMap[i] is an available allocation unit
-            if (memMap[i] == -1) {
+            if (bitmap[i] == 0) {
                 if (currentHoleStart == -1) { // This means that this is the start of a hole
                     currentHoleStart = i;
 
@@ -86,7 +86,7 @@ public class MemoryManager {
                     }
 
                     // Check if the unit at [start of this hole + the requested amount - 1] is already allocated
-                    if (memMap[i + amount - 1] != -1) {
+                    if (bitmap[i + amount - 1] == 1) {
                         // If so, this hole will not fit for the new process. Thus, move directly to [i + amount] and search. This avoids unnecessary traversal if the hole is too small.
                         i += amount - 1; // -1 because it will get incremented at the next iteration.
                         currentHoleStart = -1;
@@ -98,7 +98,7 @@ public class MemoryManager {
             } else {
                 if (amount <= currentHoleSize) {
                     // Found a hole that fits the requested amount, so choose it.
-                    allocInMemMap(currentHoleStart, amount, Process.count);
+                    allocInMemMap(currentHoleStart, amount);
                     return new Process(currentHoleStart, amount);
                 }
 
@@ -109,7 +109,7 @@ public class MemoryManager {
 
             // Check if we've reached the end of memory and handle the case where the end of the memory is a hole
             if (i == memSize - 1 && amount <= currentHoleSize) {
-                allocInMemMap(currentHoleStart, amount, Process.count);
+                allocInMemMap(currentHoleStart, amount);
                 return new Process(currentHoleStart, amount);
             }
         }
@@ -179,7 +179,7 @@ public class MemoryManager {
         int i;
         for (i = 0; i < memSize; i++) {
             // Checking if memMap[i] is an available allocation unit
-            if (memMap[i] == -1) {
+            if (bitmap[i] == 0) {
                 if (currentHoleStart == -1) { // This means that this is the start of a hole
                     currentHoleStart = i;
 
@@ -189,7 +189,7 @@ public class MemoryManager {
                     }
 
                     // Check if the unit at [start of this hole + the requested amount - 1] is already allocated
-                    if (memMap[i + amount - 1] != -1) {
+                    if (bitmap[i + amount - 1] == 1) {
                         // If so, this hole will not fit for the new process. Thus, move directly to [i + amount] and search. This avoids unnecessary traversal if the hole is too small.
                         i += amount - 1; // -1 because it will get incremented at the next iteration.
                         currentHoleStart = -1;
@@ -202,7 +202,7 @@ public class MemoryManager {
                 if (amount == currentHoleSize) {
                     // We found a perfect space for the process (requested amount is equal to the size of the hole)
                     // Therefore, allocate it directly to the process.
-                    allocInMemMap(currentHoleStart, amount, Process.count);
+                    allocInMemMap(currentHoleStart, amount);
                     return new Process(currentHoleStart, amount);
 
                 } else if (amount < currentHoleSize && currentHoleSize < bestHoleSize) { // if it fits the requested amount, and it's better (less in size) than the best we've found so far
@@ -228,7 +228,7 @@ public class MemoryManager {
         }
 
         // Updating the memory map
-        allocInMemMap(bestHoleStart, amount, Process.count);
+        allocInMemMap(bestHoleStart, amount);
         return new Process(bestHoleStart, amount);
     }
 
@@ -241,7 +241,7 @@ public class MemoryManager {
         int i;
         for (i = 0; i < memSize; i++) {
             // Checking if memMap[i] is an available allocation unit
-            if (memMap[i] == -1) {
+            if (bitmap[i] == 0) {
                 if (currentHoleStart == -1) { // This means that this is the start of a hole
                     currentHoleStart = i;
 
@@ -251,7 +251,7 @@ public class MemoryManager {
                     }
 
                     // Check if the unit at [start of this hole + the requested amount - 1] is already allocated
-                    if (memMap[i + amount - 1] != -1) {
+                    if (bitmap[i + amount - 1] == 1) {
                         // If so, this hole will not fit for the new process. Thus, move directly to [i + amount] and search. This avoids unnecessary traversal if the hole is too small.
                         i += amount - 1; // -1 because it will get incremented at the next iteration.
                         currentHoleStart = -1;
@@ -284,13 +284,13 @@ public class MemoryManager {
         }
 
         // Updating the memory map
-        allocInMemMap(worstFitHoleStart, amount, Process.count);
+        allocInMemMap(worstFitHoleStart, amount);
         return new Process(worstFitHoleStart, amount);
     }
 
-    private void allocInMemMap(int base, int amount, int processID) {
+    private void allocInMemMap(int base, int amount) {
         for (int i = base; i < base + amount; i++) {
-            this.memMap[i] = processID;
+            this.bitmap[i] = 1;
         }
     }
 
@@ -313,8 +313,6 @@ public class MemoryManager {
         return -1;
     }
 
-    // TODO: should i really store the process id in the allocated units???
-
     /**
      * Sets the allocation units of the given process to -1 in the memory map.
      *
@@ -322,7 +320,7 @@ public class MemoryManager {
      */
     private void freeProcessMemory(Process p) {
         for (int i = p.getBase(); i < p.getBase() + p.getLimit(); i++) {
-            memMap[i] = -1;
+            bitmap[i] = 0;
         }
     }
 
@@ -340,17 +338,7 @@ public class MemoryManager {
     }
 
     public void printMemory() {
-        System.out.println("Memory Map:");
-        System.out.println("-----------");
-        for (int i = 0; i < memSize; i++) {
-            if (memMap[i] == -1) {
-                System.out.printf("%-4d - %-3s", i, "Free");
-            } else {
-                System.out.printf("%-4d - %-3d", i, memMap[i]);
-            }
-            System.out.println();
-        }
-        System.out.println();
+        // TODO
     }
 
     public int getMemSize() {
@@ -361,12 +349,12 @@ public class MemoryManager {
         this.memSize = memSize;
     }
 
-    public int[] getMemMap() {
-        return memMap;
+    public int[] getBitmap() {
+        return bitmap;
     }
 
-    public void setMemMap(int[] memMap) {
-        this.memMap = memMap;
+    public void setBitmap(int[] bitmap) {
+        this.bitmap = bitmap;
     }
 
     public int getFitStrategy() {
