@@ -1,9 +1,9 @@
 import java.util.ArrayList;
 import java.util.Arrays;
-
+import static java.lang.Integer.MAX_VALUE;
 import static java.lang.Integer.MAX_VALUE;
 
-public class MemoryManager {
+public class    MemoryManager {
 
     /**
      * The size of the memory in KB
@@ -55,9 +55,9 @@ public class MemoryManager {
             case mmu.FIRST_FIT:
                 result = allocFirstFit(amount);
                 break;
-//            case mmu.NEXT_FIT:
-//                result = allocNextFit(amount);
-//                break;
+            case mmu.NEXT_FIT:
+                result = allocNextFit(amount);
+                break;
             case mmu.BEST_FIT:
                 result = allocBestFit(amount);
                 break;
@@ -169,6 +169,45 @@ public class MemoryManager {
 //        // If we reach here, it means that there was no hole that would fit (otherwise, we would have chosen it).
 //        throw new NoEnoughMemoryException();
 //    }
+
+    private Process allocNextFit(int amount) throws NoEnoughMemoryException {
+        int currentHoleStart = -1;
+        int currentHoleSize = 0;
+
+        int i = lastPos;  // Start searching from the last position
+        int count = 0;    // Counter to track the number of checked positions
+
+        // Loop around the bitmap array to simulate a circular search
+        do {
+            if (bitmap[i] == 0) {  // If the current slot is free
+                if (currentHoleStart == -1) {  // Start of a new hole
+                    currentHoleStart = i;
+                }
+                currentHoleSize++;
+
+                // Check if the current hole size is enough to allocate the requested memory
+                if (currentHoleSize >= amount) {
+                    // Allocate memory in the bitmap
+                    allocInMemMap(currentHoleStart, amount);
+                    lastPos = currentHoleStart + amount;  // Update lastPos to the position after the newly allocated block
+                    return new Process(currentHoleStart, amount);
+                }
+            } else {
+                // Reset hole tracking variables
+                currentHoleStart = -1;
+                currentHoleSize = 0;
+            }
+
+            // Move to the next position, wrapping around if necessary
+            i = (i + 1) % memSize;
+            count++;
+        } while (count < memSize);  // Continue until the whole bitmap is checked
+
+        // If no suitable hole is found
+        throw new NoEnoughMemoryException();
+    }
+
+
 
     private Process allocBestFit(int amount) throws NoEnoughMemoryException {
         int currentHoleStart = -1;
@@ -337,8 +376,15 @@ public class MemoryManager {
         return process.getBase() + virtualAddress;
     }
 
+    // Method to print current memory state
     public void printMemory() {
-        // TODO
+        if (processes.isEmpty()) {
+            System.out.println("Memory is empty.");
+        } else {
+            for (Process process : processes) {
+                System.out.println("Process ID: " + process.getId() + ", Base: " + process.getBase() + ", Limit: " + process.getLimit());
+            }
+        }
     }
 
     public int getMemSize() {
