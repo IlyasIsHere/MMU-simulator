@@ -170,41 +170,37 @@ public class    MemoryManager {
 //        throw new NoEnoughMemoryException();
 //    }
 
-    private Process allocNextFit(int amount) throws NoEnoughMemoryException {
-        int currentHoleStart = -1;
-        int currentHoleSize = 0;
+    private Process allocNextFit(int amount) {
+        int startPos = lastPos;
+        int freeCount = 0;
+        int base = -1;
 
-        int i = lastPos;  // Start searching from the last position
-        int count = 0;    // Counter to track the number of checked positions
-
-        // Loop around the bitmap array to simulate a circular search
         do {
-            if (bitmap[i] == 0) {  // If the current slot is free
-                if (currentHoleStart == -1) {  // Start of a new hole
-                    currentHoleStart = i;
+            if (bitmap[lastPos] == 0) {
+                if (freeCount == 0) {
+                    base = lastPos;
                 }
-                currentHoleSize++;
-
-                // Check if the current hole size is enough to allocate the requested memory
-                if (currentHoleSize >= amount) {
-                    // Allocate memory in the bitmap
-                    allocInMemMap(currentHoleStart, amount);
-                    lastPos = currentHoleStart + amount;  // Update lastPos to the position after the newly allocated block
-                    return new Process(currentHoleStart, amount);
+                freeCount++;
+                if (freeCount == amount) {
+                    break;
                 }
             } else {
-                // Reset hole tracking variables
-                currentHoleStart = -1;
-                currentHoleSize = 0;
+                freeCount = 0;
+                base = -1;
             }
 
-            // Move to the next position, wrapping around if necessary
-            i = (i + 1) % memSize;
-            count++;
-        } while (count < memSize);  // Continue until the whole bitmap is checked
+            lastPos = (lastPos + 1) % memSize;
+        } while (lastPos != startPos);
 
-        // If no suitable hole is found
-        throw new NoEnoughMemoryException();
+        if (freeCount == amount) {
+            for (int i = 0; i < amount; i++) {
+                bitmap[(base + i) % memSize] = 1;
+            }
+            lastPos = (base + amount) % memSize;
+            return new Process(base, amount);
+        }
+
+        return null;
     }
 
 
