@@ -1,9 +1,8 @@
 import java.util.ArrayList;
 import java.util.Arrays;
 import static java.lang.Integer.MAX_VALUE;
-import static java.lang.Integer.MAX_VALUE;
 
-public class    MemoryManager {
+public class MemoryManager {
 
     /**
      * The size of the memory in KB
@@ -49,22 +48,14 @@ public class    MemoryManager {
     }
 
     public Process allocateMemory(int amount) throws NoEnoughMemoryException {
-        Process result = null;
+        Process result = switch (fitStrategy) {
+            case mmu.FIRST_FIT -> allocFirstFit(amount);
+            case mmu.NEXT_FIT -> allocNextFit(amount);
+            case mmu.BEST_FIT -> allocBestFit(amount);
+            case mmu.WORST_FIT -> allocWorstFit(amount);
+            default -> null;
+        };
 
-        switch (fitStrategy) {
-            case mmu.FIRST_FIT:
-                result = allocFirstFit(amount);
-                break;
-            case mmu.NEXT_FIT:
-                result = allocNextFit(amount);
-                break;
-            case mmu.BEST_FIT:
-                result = allocBestFit(amount);
-                break;
-            case mmu.WORST_FIT:
-                result = allocWorstFit(amount);
-                break;
-        }
         processes.add(result);
         return result;
     }
@@ -118,66 +109,21 @@ public class    MemoryManager {
         throw new NoEnoughMemoryException();
     }
 
-//    private Process allocNextFit(int amount) throws NoEnoughMemoryException {
-//        int currentHoleStart = -1;
-//        int currentHoleSize = 0;
-//
-//        for (int i = lastPos, count = 0; count < memSize; i = (i + 1) % memSize, count++) {
-//
-//        }
-//
-//        for (i = lastPos; i < memSize; i++) {
-//            // Checking if memMap[i] is an available allocation unit
-//            if (memMap[i] == -1) {
-//                if (currentHoleStart == -1) { // This means that this is the start of a hole
-//                    currentHoleStart = i;
-//
-//                    // Check if we're near the end of the memory
-//                    if (i + amount - 1 >= memSize) {
-//                        break;
-//                    }
-//
-//                    // Check if the unit at [start of this hole + the requested amount - 1] is already allocated
-//                    if (memMap[i + amount - 1] != -1) {
-//                        // If so, this hole will not fit for the new process. Thus, move directly to [i + amount] and search. This avoids unnecessary traversal if the hole is too small.
-//                        i += amount - 1; // -1 because it will get incremented at the next iteration.
-//                        currentHoleStart = -1;
-//                        continue;
-//                    }
-//                }
-//                currentHoleSize++;
-//
-//            } else {
-//                if (amount <= currentHoleSize) {
-//                    // Found a hole that fits the requested amount, so choose it.
-//                    allocInMemMap(currentHoleStart, amount, Process.count);
-//                    return new Process(currentHoleStart, amount);
-//                }
-//
-//                // Reinitialize the counters
-//                currentHoleSize = 0;
-//                currentHoleStart = -1;
-//            }
-//
-//            // Check if we've reached the end of memory and handle the case where the end of the memory is a hole
-//            if (i == memSize - 1 && amount <= currentHoleSize) {
-//                allocInMemMap(currentHoleStart, amount, Process.count);
-//                return new Process(currentHoleStart, amount);
-//            }
-//        }
-//
-//        // If we reach here, it means that there was no hole that would fit (otherwise, we would have chosen it).
-//        throw new NoEnoughMemoryException();
-//    }
-
-    private Process allocNextFit(int amount) {
+    private Process allocNextFit(int amount) throws NoEnoughMemoryException {
         int startPos = lastPos;
         int freeCount = 0;
         int base = -1;
 
         do {
+            if (lastPos == 0) {
+                // The pointer returned back to the beginning of the memory, so reset the counters
+                base = -1;
+                freeCount = 0;
+            }
+
             if (bitmap[lastPos] == 0) {
                 if (freeCount == 0) {
+                    // It's the beginning of a hole
                     base = lastPos;
                 }
                 freeCount++;
@@ -185,6 +131,7 @@ public class    MemoryManager {
                     break;
                 }
             } else {
+                // It's an allocated block, so reset the counters
                 freeCount = 0;
                 base = -1;
             }
@@ -196,14 +143,13 @@ public class    MemoryManager {
             for (int i = 0; i < amount; i++) {
                 bitmap[(base + i) % memSize] = 1;
             }
-            lastPos = (base + amount) % memSize;
+            lastPos = (lastPos + 1) % memSize;
             return new Process(base, amount);
         }
 
-        return null;
+        // If we reach here, it means that there was no hole that would fit (otherwise, we would have chosen it).
+        throw new NoEnoughMemoryException();
     }
-
-
 
     private Process allocBestFit(int amount) throws NoEnoughMemoryException {
         int currentHoleStart = -1;
