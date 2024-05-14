@@ -146,7 +146,7 @@ public class MemoryManager {
         } while (lastPos != startPos);
 
         // Check if there are more available units:
-        while (bitmap[lastPos] == 0 && freeCount < amount) {
+        while (lastPos < memSize && bitmap[lastPos] == 0 && freeCount < amount) {
             lastPos++;
             freeCount++;
         }
@@ -296,7 +296,7 @@ public class MemoryManager {
     }
 
     /**
-     * Sets the allocation units of the given process to -1 in the memory map.
+     * Sets the allocation units of the given process to 0 in the memory map.
      *
      * @param p
      */
@@ -345,6 +345,7 @@ public class MemoryManager {
             System.out.print(" Free |");
         }
         System.out.println();
+        System.out.println("Next fit last position : " + lastPos);
     }
 
 }
