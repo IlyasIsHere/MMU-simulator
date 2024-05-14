@@ -1,5 +1,8 @@
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Map;
+import java.util.TreeMap;
+
 import static java.lang.Integer.MAX_VALUE;
 
 public class MemoryManager {
@@ -21,7 +24,12 @@ public class MemoryManager {
      * For other strategies, it is set to -1 (not used).
      */
     private int lastPos = -1;
-    private ArrayList<Process> processes;
+
+    /**
+     * This is a TreeMap of processes where in each entry, the key represents the id of the process, and the value represents the actual Process object.
+     * This TreeMap is sorted by keys (process IDs).
+     */
+    private Map<Integer, Process> processes;
 
     /**
      * @param memSize     Memory size in KB
@@ -40,7 +48,7 @@ public class MemoryManager {
             throw new IllegalArgumentException("The allocation strategy must be between 1 and 4");
         }
         this.fitStrategy = fitStrategy;
-        processes = new ArrayList<>();
+        processes = new TreeMap<>();
 
         if (fitStrategy == mmu.NEXT_FIT) {
             lastPos = 0;
@@ -56,7 +64,8 @@ public class MemoryManager {
             default -> null;
         };
 
-        processes.add(result);
+        assert result != null;
+        processes.put(result.getId(), result);
         return result;
     }
 
@@ -276,22 +285,12 @@ public class MemoryManager {
     }
 
     public void deleteProcess(int processID) throws ProcessNotFoundException {
-        int idx = findProcessById(processID);
-        if (idx == -1) {
+        if (! processes.containsKey(processID)) {
             throw new ProcessNotFoundException(processID);
         }
-        Process process = processes.get(idx);
-        processes.remove(idx);
+        Process process = processes.get(processID);
+        processes.remove(processID);
         freeProcessMemory(process);
-    }
-
-    private int findProcessById(int id) {
-        for (int i = 0; i < processes.size(); i++) {
-            if (processes.get(i).getId() == id) {
-                return i;
-            }
-        }
-        return -1;
     }
 
     /**
@@ -306,11 +305,11 @@ public class MemoryManager {
     }
 
     public int convertAddress(int processID, int virtualAddress) throws ProcessNotFoundException, IllegalAddressException {
-        int idx = findProcessById(processID);
-        if (idx == -1) {
+        if (! processes.containsKey(processID)) {
             throw new ProcessNotFoundException(processID);
         }
-        Process process = processes.get(idx);
+
+        Process process = processes.get(processID);
         if (virtualAddress >= process.getLimit() || virtualAddress < 0) {
             throw new IllegalAddressException();
         }
@@ -319,15 +318,9 @@ public class MemoryManager {
     }
 
     // Method to print current memory state
-    public void printMemory() {
-        if (processes.isEmpty()) {
-            System.out.println("Memory is empty.");
-        } else {
-            for (Process process : processes) {
-                System.out.println("Process ID: " + process.getId() + ", Base: " + process.getBase() + ", Limit: " + process.getLimit());
-            }
-        }
-    }
+//    public void printMemory() {
+//
+//    }
 
     public int getMemSize() {
         return memSize;
