@@ -67,6 +67,10 @@ public class MemoryManager {
     }
 
     private Process allocFirstFit(int amount) throws NoEnoughMemoryException {
+        if (amount > memSize) {
+            throw new NoEnoughMemoryException();
+        }
+
         int currentHoleStart = -1;
         int currentHoleSize = 0;
 
@@ -116,6 +120,10 @@ public class MemoryManager {
     }
 
     private Process allocNextFit(int amount) throws NoEnoughMemoryException {
+        if (amount > memSize) {
+            throw new NoEnoughMemoryException();
+        }
+
         int startPos = lastPos;
         int freeCount = 0;
         int base = -1;
@@ -163,6 +171,10 @@ public class MemoryManager {
     }
 
     private Process allocBestFit(int amount) throws NoEnoughMemoryException {
+        if (amount > memSize) {
+            throw new NoEnoughMemoryException();
+        }
+
         int currentHoleStart = -1;
         int currentHoleSize = 0;
         int bestHoleSize = MAX_VALUE;
@@ -225,6 +237,10 @@ public class MemoryManager {
     }
 
     private Process allocWorstFit(int amount) throws NoEnoughMemoryException {
+        if (amount > memSize) {
+            throw new NoEnoughMemoryException();
+        }
+
         int currentHoleStart = -1;
         int currentHoleSize = 0;
         int worstFitHoleSize = 0;
