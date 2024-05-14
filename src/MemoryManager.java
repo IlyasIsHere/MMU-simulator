@@ -1,7 +1,4 @@
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Map;
-import java.util.TreeMap;
+import java.util.*;
 
 import static java.lang.Integer.MAX_VALUE;
 
@@ -285,7 +282,7 @@ public class MemoryManager {
     }
 
     public void deleteProcess(int processID) throws ProcessNotFoundException {
-        if (! processes.containsKey(processID)) {
+        if (!processes.containsKey(processID)) {
             throw new ProcessNotFoundException(processID);
         }
         Process process = processes.get(processID);
@@ -305,7 +302,7 @@ public class MemoryManager {
     }
 
     public int convertAddress(int processID, int virtualAddress) throws ProcessNotFoundException, IllegalAddressException {
-        if (! processes.containsKey(processID)) {
+        if (!processes.containsKey(processID)) {
             throw new ProcessNotFoundException(processID);
         }
 
@@ -318,9 +315,32 @@ public class MemoryManager {
     }
 
     // Method to print current memory state
-//    public void printMemory() {
-//
-//    }
+    public void printMemory() {
+        ArrayList<Process> sortedProcesses = new ArrayList<>(processes.values());
+        // Sort the processes based on their base addresses
+        sortedProcesses.sort(Comparator.comparingInt(Process::getBase));
+
+        System.out.println("Memory Map:");
+        int prevPos = 0;
+
+        // Print the header
+        System.out.print("|");
+        for (Process process : sortedProcesses) {
+            for (int i = prevPos; i < process.getBase(); i++) {
+                System.out.print(" Free |");
+            }
+            for (int i = process.getBase(); i < process.getBase() + process.getLimit(); i++) {
+                System.out.printf(" %-git 4d |", process.getId());
+            }
+            prevPos = process.getBase() + process.getLimit();
+        }
+
+        // Printing the last block if it was empty
+        for (int i = prevPos; i < memSize; i++) {
+            System.out.print(" Free |");
+        }
+        System.out.println();
+    }
 
     public int getMemSize() {
         return memSize;
