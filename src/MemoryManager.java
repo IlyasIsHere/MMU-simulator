@@ -122,7 +122,7 @@ public class MemoryManager {
 
         do {
             if (lastPos == 0) {
-                // The pointer returned back to the beginning of the memory, so reset the counters
+                // The pointer returned back to the beginning of the memory, so reset the counters, so that the allocation is contiguous.
                 base = -1;
                 freeCount = 0;
             }
@@ -145,15 +145,20 @@ public class MemoryManager {
             lastPos = (lastPos + 1) % memSize;
         } while (lastPos != startPos);
 
+        // Check if there are more available units:
+        while (bitmap[lastPos] == 0 && freeCount < amount) {
+            lastPos++;
+            freeCount++;
+        }
+
         if (freeCount == amount) {
-            for (int i = 0; i < amount; i++) {
-                bitmap[(base + i) % memSize] = 1;
-            }
+            allocInMemMap(base, amount);
             lastPos = (lastPos + 1) % memSize;
             return new Process(base, amount);
         }
 
         // If we reach here, it means that there was no hole that would fit (otherwise, we would have chosen it).
+        lastPos = startPos;
         throw new NoEnoughMemoryException();
     }
 
@@ -330,7 +335,7 @@ public class MemoryManager {
                 System.out.print(" Free |");
             }
             for (int i = process.getBase(); i < process.getBase() + process.getLimit(); i++) {
-                System.out.printf(" %-git 4d |", process.getId());
+                System.out.printf(" %-4d |", process.getId());
             }
             prevPos = process.getBase() + process.getLimit();
         }
@@ -342,27 +347,4 @@ public class MemoryManager {
         System.out.println();
     }
 
-    public int getMemSize() {
-        return memSize;
-    }
-
-    public void setMemSize(int memSize) {
-        this.memSize = memSize;
-    }
-
-    public int[] getBitmap() {
-        return bitmap;
-    }
-
-    public void setBitmap(int[] bitmap) {
-        this.bitmap = bitmap;
-    }
-
-    public int getFitStrategy() {
-        return fitStrategy;
-    }
-
-    public void setFitStrategy(int fitStrategy) {
-        this.fitStrategy = fitStrategy;
-    }
 }
