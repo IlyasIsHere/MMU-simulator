@@ -1,3 +1,5 @@
+import org.w3c.dom.ls.LSOutput;
+
 import java.util.*;
 
 import static java.lang.Integer.MAX_VALUE;
@@ -341,27 +343,55 @@ public class MemoryManager {
         // Sort the processes based on their base addresses
         sortedProcesses.sort(Comparator.comparingInt(Process::getBase));
 
-        System.out.println("Memory Map:");
-        int prevPos = 0;
+        System.out.println(mmu.ANSI_GREEN + "Memory Map:" + mmu.ANSI_RESET);
 
-        // Print the header
-        System.out.print("|");
-        for (Process process : sortedProcesses) {
-            for (int i = prevPos; i < process.getBase(); i++) {
-                System.out.print(" Free |");
-            }
-            for (int i = process.getBase(); i < process.getBase() + process.getLimit(); i++) {
-                System.out.printf(" %-4d |", process.getId());
-            }
-            prevPos = process.getBase() + process.getLimit();
+        // Printing if there is an empty block at the beginning of the memory
+        if (sortedProcesses.isEmpty()) {
+            printHole(0, memSize);
+            return;
         }
 
-        // Printing the last block if it was empty
-        for (int i = prevPos; i < memSize; i++) {
-            System.out.print(" Free |");
+        if (sortedProcesses.get(0).getBase() != 0) {
+            printHole(0, sortedProcesses.get(0).getBase());
         }
-        System.out.println();
-        System.out.println("Next fit last position : " + lastPos);
+        for (int i = 0; i < processes.size() - 1; i++) {
+            Process proc = sortedProcesses.get(i);
+            int nextProcBase = processes.get(i + 1).getBase();
+            printAllocatedBlock(proc, proc.getBase(), proc.getLimit());
+
+            if (nextProcBase > proc.getBase() + proc.getLimit()) {
+                printHole(proc.getBase() + proc.getLimit(), nextProcBase);
+            }
+        }
+
+        Process lastProc = sortedProcesses.get(sortedProcesses.size() - 1);
+        printAllocatedBlock(lastProc, lastProc.getBase(), lastProc.getLimit());
+
+        if (lastProc.getBase() + lastProc.getLimit() < memSize) {
+            printHole(lastProc.getBase() + lastProc.getLimit(), memSize);
+        }
+    }
+
+    private void printHole(int start, int end) {
+        System.out.println("------------------------------------------------");
+        System.out.println("- Hole:");
+        System.out.println("  Start: " + blueColor(start + "") + " KB");
+        System.out.println("  End: " + blueColor(end - 1 + "") + " KB");
+        System.out.println("  Size: " + blueColor((end - start) + "") + " KB");
+        System.out.println("------------------------------------------------");
+    }
+
+    private void printAllocatedBlock(Process proc, int start, int size) {
+        System.out.println("------------------------------------------------");
+        System.out.println("- Allocated block for process " + blueColor(proc.getId() + "") + ":");
+        System.out.println("  Start: " + blueColor(start + "") + " KB");
+        System.out.println("  End: " + blueColor((start + size - 1) + "") + " KB");
+        System.out.println("  Size: " + blueColor(size + "") + " KB");
+        System.out.println("------------------------------------------------");
+    }
+
+    public static String blueColor(String s) {
+        return mmu.ANSI_BLUE + s + mmu.ANSI_RESET;
     }
 
 }

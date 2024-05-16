@@ -1,6 +1,6 @@
 public class Process {
 
-    public static int count = 0;
+    public static int count = 1;
 
     private int id;
     private int base;

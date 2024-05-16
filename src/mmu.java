@@ -5,6 +5,8 @@ import java.util.Scanner;
 public class mmu {
     public static final String ANSI_RESET = "\u001B[0m";
     public static final String ANSI_RED = "\u001B[31m";
+    public static final String ANSI_BLUE = "\u001B[34m";
+    public static final String ANSI_GREEN = "\u001B[32m";
 
     // constants for different allocation strategies
     public static final int FIRST_FIT = 1;
@@ -26,6 +28,21 @@ public class mmu {
             int allocStrategy = Integer.parseInt(args[1]);
 
             mm = new MemoryManager(memSize, allocStrategy);
+            System.out.println("Memory of size " + memSize + " is created.");
+            switch (allocStrategy) {
+                case FIRST_FIT:
+                    System.out.println("The allocation strategy is First Fit");
+                    break;
+                case NEXT_FIT:
+                    System.out.println("The allocation strategy is Next Fit");
+                    break;
+                case BEST_FIT:
+                    System.out.println("The allocation strategy is Best Fit");
+                    break;
+                case WORST_FIT:
+                    System.out.println("The allocation strategy is Worst Fit");
+                    break;
+            }
         } catch (Exception e) {
             printErr("Error: " + e.getMessage());
             System.exit(1);
