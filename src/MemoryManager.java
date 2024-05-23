@@ -339,36 +339,23 @@ public class MemoryManager {
 
     // Method to print current memory state
     public void printMemory() {
-        ArrayList<Process> sortedProcesses = new ArrayList<>(processes.values());
+        List<Process> sortedProcesses = new ArrayList<>(processes.values());
         // Sort the processes based on their base addresses
         sortedProcesses.sort(Comparator.comparingInt(Process::getBase));
 
-        System.out.println(mmu.ANSI_GREEN + "Memory Map:" + mmu.ANSI_RESET);
+        System.out.println("Memory Map:");
 
-        // Printing if there is an empty block at the beginning of the memory
-        if (sortedProcesses.isEmpty()) {
-            printHole(0, memSize);
-            return;
-        }
-
-        if (sortedProcesses.get(0).getBase() != 0) {
-            printHole(0, sortedProcesses.get(0).getBase());
-        }
-        for (int i = 0; i < processes.size() - 1; i++) {
-            Process proc = sortedProcesses.get(i);
-            int nextProcBase = processes.get(i + 1).getBase();
-            printAllocatedBlock(proc, proc.getBase(), proc.getLimit());
-
-            if (nextProcBase > proc.getBase() + proc.getLimit()) {
-                printHole(proc.getBase() + proc.getLimit(), nextProcBase);
+        int currentAddress = 0;
+        for (Process proc : sortedProcesses) {
+            if (currentAddress < proc.getBase()) {
+                printHole(currentAddress, proc.getBase());
             }
+            printAllocatedBlock(proc);
+            currentAddress = proc.getBase() + proc.getLimit();
         }
 
-        Process lastProc = sortedProcesses.get(sortedProcesses.size() - 1);
-        printAllocatedBlock(lastProc, lastProc.getBase(), lastProc.getLimit());
-
-        if (lastProc.getBase() + lastProc.getLimit() < memSize) {
-            printHole(lastProc.getBase() + lastProc.getLimit(), memSize);
+        if (currentAddress < memSize) {
+            printHole(currentAddress, memSize);
         }
     }
 
@@ -381,7 +368,9 @@ public class MemoryManager {
         System.out.println("------------------------------------------------");
     }
 
-    private void printAllocatedBlock(Process proc, int start, int size) {
+    private void printAllocatedBlock(Process proc) {
+        int start = proc.getBase();
+        int size = proc.getLimit();
         System.out.println("------------------------------------------------");
         System.out.println("- Allocated block for process " + blueColor(proc.getId() + "") + ":");
         System.out.println("  Start: " + blueColor(start + "") + " KB");
